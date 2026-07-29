@@ -36,7 +36,7 @@ df = df.drop(columns=[c for c in LEAKY if c in df.columns])
 y = df.pop(LABEL).astype(int)
 X = df.copy()
 
-cat_cols = [c for c in X.columns if X[c].dtype == "object"]
+cat_cols = [c for c in X.columns if not pd.api.types.is_numeric_dtype(X[c])]
 cat_maps = {}
 for c in cat_cols:
     cats = X[c].astype("category").cat.categories
