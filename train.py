@@ -36,13 +36,18 @@ df = df.drop(columns=[c for c in LEAKY if c in df.columns])
 y = df.pop(LABEL).astype(int)
 X = df.copy()
 
-cat_cols = [c for c in X.columns if not pd.api.types.is_numeric_dtype(X[c])]
 cat_maps = {}
-for c in cat_cols:
-    cats = X[c].astype("category").cat.categories
-    cat_maps[c] = list(cats)
-    X[c] = pd.Categorical(X[c], categories=cats).codes
+for c in X.columns:
+    num = pd.to_numeric(X[c], errors="coerce")
+    if num.notna().sum() >= X[c].notna().sum():
+        X[c] = num                      # genuinely numeric column
+    else:
+        s = X[c].astype(str).fillna("NA")
+        cats = sorted(s.unique())
+        cat_maps[c] = cats
+        X[c] = pd.Categorical(s, categories=cats).codes
 X = X.fillna(-999)
+print(f"Encoded categoricals: {list(cat_maps.keys())}", flush=True)
 
 print(f"Features: {list(X.columns)}", flush=True)
 print(f"Label balance: {y.mean()*100:.1f}% positive", flush=True)
