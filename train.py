@@ -1,6 +1,6 @@
 """
-SAP AI Core training step — late-delivery risk model.
-Reads a CSV dataset from /data, trains a RandomForest, writes model + metadata to /model.
+SAP AI Core training step - late-delivery risk model.
+Reads a CSV dataset from /data, trains a RandomForest, writes model + metadata to MODEL_DIR.
 """
 import glob
 import json
@@ -14,13 +14,12 @@ from sklearn.metrics import roc_auc_score, classification_report
 from sklearn.model_selection import train_test_split
 
 DATA_DIR = "/data"
-MODEL_DIR = "/model"
+MODEL_DIR = os.environ.get("MODEL_DIR", "/tmp/model")
 LABEL = "late"
 
 N_ESTIMATORS = int(os.environ.get("N_ESTIMATORS", "200"))
 MIN_LEAF = int(os.environ.get("MIN_SAMPLES_LEAF", "5"))
 
-# ---- load ------------------------------------------------------------------
 files = glob.glob(f"{DATA_DIR}/**/*.csv", recursive=True)
 if not files:
     sys.exit(f"No CSV found under {DATA_DIR}")
@@ -28,7 +27,6 @@ print(f"Reading {files[0]}", flush=True)
 df = pd.read_csv(files[0], low_memory=False)
 print(f"Loaded {len(df):,} rows x {len(df.columns)} cols", flush=True)
 
-# ---- prepare ---------------------------------------------------------------
 df = df.dropna(subset=[LABEL])
 
 LEAKY = ["order", "item", "order_date", "planned_gi", "actual_gi", "planned_dlv",
@@ -49,7 +47,6 @@ X = X.fillna(-999)
 print(f"Features: {list(X.columns)}", flush=True)
 print(f"Label balance: {y.mean()*100:.1f}% positive", flush=True)
 
-# ---- train -----------------------------------------------------------------
 X_tr, X_te, y_tr, y_te = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y)
 
@@ -68,7 +65,6 @@ importances = (pd.Series(model.feature_importances_, index=X.columns)
                .sort_values(ascending=False))
 print("Top features:\n" + importances.head(10).to_string(), flush=True)
 
-# ---- persist ---------------------------------------------------------------
 os.makedirs(MODEL_DIR, exist_ok=True)
 joblib.dump({"model": model, "columns": list(X.columns), "cat_maps": cat_maps},
             f"{MODEL_DIR}/model.pkl")
