@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  smoke:
+    name: pipeline smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install pandas scikit-learn joblib
+
+      - name: Run pipeline smoke test
+        env:
+          # The scripts default to the AI Core mount points /data and /mnt/models,
+          # which aren't writable on the runner. Point them at the workspace instead.
+          DATA_DIR: ${{ github.workspace }}/_data
+          MODEL_MNT: ${{ github.workspace }}/_models
+        run: bash .claude/skills/run-pipeline/smoke.sh
