@@ -2,18 +2,29 @@
 # End-to-end local run of the late-delivery pipeline: train.py -> serve.py -> predict.
 # Exit 0 means both stages ran and the served endpoint answered correctly.
 #
-# Overridable env: DATA_DIR (default /data), MODEL_MNT (default /mnt/models),
-#                  PORT (default 9001), N_ROWS (fixture size, default 3000).
+# train.py reads /data and serve.py reads /mnt/models — both paths are HARD-CODED
+# in the scripts (the SAP AI Core / KServe mount points), so the fixture and the
+# model artifact must be staged there; env overrides can't redirect the scripts.
+# Creating those dirs may need privilege on a fresh host, so we fall back to sudo.
+#
+# Overridable env: PORT (default 9001), N_ROWS (fixture size, default 3000).
 set -euo pipefail
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SKILL_DIR/../../.." && pwd)"
 WORK="$(mktemp -d)"
 
-DATA_DIR="${DATA_DIR:-/data}"          # train.py hard-codes /data internally
-MODEL_MNT="${MODEL_MNT:-/mnt/models}"  # serve.py hard-codes /mnt/models internally
-PORT="${PORT:-9001}"                   # serve.py binds :9001
+DATA_DIR="/data"          # train.py: DATA_DIR is a hard-coded constant
+MODEL_MNT="/mnt/models"   # serve.py: MODEL_ROOT is a hard-coded constant
+PORT="${PORT:-9001}"      # serve.py binds :9001
 N_ROWS="${N_ROWS:-3000}"
+
+# Create a dir and make it writable by the current user, using sudo only if needed
+# (works as root locally without sudo, and as the non-root CI runner with sudo).
+ensure_writable_dir() {
+  mkdir -p "$1" 2>/dev/null || sudo mkdir -p "$1"
+  [ -w "$1" ] || sudo chmod 0777 "$1"
+}
 
 SERVE_PID=""
 cleanup() {
@@ -26,14 +37,13 @@ echo "== 0. dependencies =="
 python3 -c "import pandas, sklearn, joblib" 2>/dev/null \
   || pip install --quiet pandas scikit-learn joblib
 
-echo "== 1. fixture =="
-python3 "$SKILL_DIR/gen_fixture.py" "$WORK/orders.csv" "$N_ROWS"
-mkdir -p "$DATA_DIR"
-cp "$WORK/orders.csv" "$DATA_DIR/orders.csv"
+echo "== 1. fixture (-> $DATA_DIR) =="
+ensure_writable_dir "$DATA_DIR"
+python3 "$SKILL_DIR/gen_fixture.py" "$DATA_DIR/orders.csv" "$N_ROWS"
 
 echo "== 2. train (writes model.pkl + metrics.json) =="
 MODEL_DIR="$WORK/model" python3 "$REPO_ROOT/train.py"
-mkdir -p "$MODEL_MNT"
+ensure_writable_dir "$MODEL_MNT"
 cp "$WORK/model/model.pkl" "$MODEL_MNT/model.pkl"
 
 echo "== 3. serve (background on :$PORT) =="

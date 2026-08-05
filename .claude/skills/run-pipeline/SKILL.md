@@ -35,19 +35,23 @@ OK — pipeline ran end to end.
 ## Why the paths are what they are
 
 The two scripts use fixed runtime paths dictated by SAP AI Core / KServe, not by
-this repo. The smoke script stages files into them so the scripts run unmodified:
+this repo. **These paths are hard-coded in the scripts and cannot be redirected
+by env vars** — `train.py` always reads `/data`, `serve.py` always reads
+`/mnt/models`. The smoke script therefore stages files into exactly those paths
+(creating them with `sudo` when the current user can't write there, so it works
+both as root locally and as the non-root CI runner):
 
 | Path | Used by | Meaning |
 |---|---|---|
-| `/data` | `train.py` (hard-coded `DATA_DIR`) | input CSV location |
-| `/mnt/models` | `serve.py` (hard-coded `MODEL_ROOT`) | served artifact location |
+| `/data` | `train.py` (hard-coded `DATA_DIR` constant) | input CSV location |
+| `/mnt/models` | `serve.py` (hard-coded `MODEL_ROOT` constant) | served artifact location |
 | `:9001` | `serve.py` | inference port |
 
-Override any of these — plus fixture size — via env vars:
+Only the port and fixture size are overridable (they don't touch the scripts'
+hard-coded paths):
 
 ```bash
-DATA_DIR=./data MODEL_MNT=./models PORT=9100 N_ROWS=500 \
-  bash .claude/skills/run-pipeline/smoke.sh
+PORT=9100 N_ROWS=500 bash .claude/skills/run-pipeline/smoke.sh
 ```
 
 ## Running the stages by hand
