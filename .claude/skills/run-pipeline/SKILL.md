@@ -78,9 +78,10 @@ kill "$SERVE_PID"
   shell running it (its argv contains `serve.py`), killing your own command and
   producing a spurious exit 143/144. Capture `$!` and `kill` that PID — the smoke
   script already does.
-- **Deps aren't pinned.** `pandas` / `scikit-learn` / `joblib` come from the
-  container image in production; there's no `requirements.txt`. The smoke script
-  `pip install`s them if the import fails.
+- **Deps come from `requirements.txt`** (pinned `pandas` / `scikit-learn` /
+  `joblib`). In production they come from the container image — keep the pins
+  aligned with that image. The smoke script `pip install -r`s them if the
+  import fails.
 - **`serve.py` reads the model once at startup.** After retraining, restart the
   server (or re-run the smoke script) to pick up the new `model.pkl`.
 - **Determinism:** both the fixture (`gen_fixture.py`) and `train.py` seed with a

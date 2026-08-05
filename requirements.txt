@@ -1,0 +1,6 @@
+# Local / CI dependencies for train.py and serve.py.
+# In production these come from the SAP AI Core container image; keep the
+# versions here aligned with that image when it changes.
+pandas==3.0.5
+scikit-learn==1.9.0
+joblib==1.5.3

@@ -77,9 +77,10 @@ AI Core, so most paths and configuration come from the AI Core runtime, not from
   AI Core workflow and serving template that live outside this repo.
 - **Logging:** use `print(..., flush=True)` — that is how these scripts surface progress in
   AI Core's log stream. There is no logging framework here.
-- **Dependencies** are implicit: `pandas`, `scikit-learn`, `joblib`. They are provided by
-  the container image (no `requirements.txt` in the repo). If you add an import, make sure
-  the image installs it.
+- **Dependencies** are pinned in `requirements.txt` (`pandas`, `scikit-learn`, `joblib`)
+  for local runs and CI. In production they are provided by the container image — keep the
+  pins aligned with that image. If you add an import, add it to `requirements.txt` *and*
+  make sure the image installs it.
 - **Style:** standard-library-only server, small procedural scripts, module-level
   docstrings describing the AI Core role. Match this — do not introduce a web framework,
   class hierarchy, or CLI framework for tasks this simple.

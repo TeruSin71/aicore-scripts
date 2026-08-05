@@ -35,7 +35,7 @@ trap cleanup EXIT
 
 echo "== 0. dependencies =="
 python3 -c "import pandas, sklearn, joblib" 2>/dev/null \
-  || pip install --quiet pandas scikit-learn joblib
+  || pip install --quiet -r "$REPO_ROOT/requirements.txt"
 
 echo "== 1. fixture (-> $DATA_DIR) =="
 ensure_writable_dir "$DATA_DIR"
