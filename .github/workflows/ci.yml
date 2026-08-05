@@ -21,9 +21,7 @@ jobs:
         run: pip install pandas scikit-learn joblib
 
       - name: Run pipeline smoke test
-        env:
-          # The scripts default to the AI Core mount points /data and /mnt/models,
-          # which aren't writable on the runner. Point them at the workspace instead.
-          DATA_DIR: ${{ github.workspace }}/_data
-          MODEL_MNT: ${{ github.workspace }}/_models
+        # train.py reads /data and serve.py reads /mnt/models (hard-coded AI Core
+        # mount points). The smoke script stages files there, creating the dirs
+        # with sudo since they aren't writable by the runner user by default.
         run: bash .claude/skills/run-pipeline/smoke.sh
