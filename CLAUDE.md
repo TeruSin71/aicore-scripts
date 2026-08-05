@@ -86,7 +86,15 @@ AI Core, so most paths and configuration come from the AI Core runtime, not from
 
 ## Running locally
 
-No test harness exists; validate by exercising the scripts directly.
+**Fastest path:** the `run-pipeline` project skill runs both stages end to end
+(fixture → train → serve → smoke-test the endpoint) with one command:
+
+```bash
+bash .claude/skills/run-pipeline/smoke.sh   # exit 0 = healthy; see .claude/skills/run-pipeline/SKILL.md
+```
+
+There is no committed dataset and no test suite, so this is the canonical way to
+verify a change to `train.py` or `serve.py`. To do it by hand instead:
 
 ```bash
 # Train against a local CSV that contains a `late` column
